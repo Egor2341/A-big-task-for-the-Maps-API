@@ -1,66 +1,39 @@
 import os
-import sys
 
+import pygame
 import requests
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 
-SCREEN_SIZE = [600, 450]
-
-
-
-
-
-class Example(QWidget):
-    def __init__(self, lon, lat, delta):
-        super().__init__()
-        self.lon = lon
-        self.lat = lat
-        self.delta = delta
-        self.getImage()
-        self.initUI()
-
-
-    def getImage(self):
+lon = "37.530887"
+lat = "55.703118"
+delta = "0.001"
+running = True
+screen = pygame.display.set_mode((600, 450))
+'''0.02, 0.03, 0.05, 0.09, 0.18, 0.35, 0.7'''
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_PAGEDOWN:
+                if float(delta) * 2 < 90:
+                    delta = str(float(delta) * 2)
+            elif event.key == pygame.K_PAGEUP:
+                if float(delta) / 2 >= 0.000125:
+                    delta = str(float(delta) / 2)
         api_server = "http://static-maps.yandex.ru/1.x/"
-
-
-
         params = {
-            "ll": ",".join([self.lon, self.lat]),
-            "spn": ",".join([self.delta, self.delta]),
+            "ll": ",".join([lon, lat]),
+            "spn": ",".join([delta, delta]),
             "l": "map"
         }
         response = requests.get(api_server, params=params)
 
-        if not response:
-            print("Ошибка выполнения запроса:")
-            print("Http статус:", response.status_code, "(", response.reason, ")")
-            sys.exit(1)
-
-        # Запишем полученное изображение в файл.
-        self.map_file = "map.png"
-        with open(self.map_file, "wb") as file:
+        map_file = "map.png"
+        with open(map_file, "wb") as file:
             file.write(response.content)
 
-    def initUI(self):
-        self.setGeometry(100, 100, *SCREEN_SIZE)
-        self.setWindowTitle('Отображение карты')
+        screen.blit(pygame.image.load(map_file), (0, 0))
+        pygame.display.flip()
+        os.remove(map_file)
 
-        ## Изображение
-        self.pixmap = QPixmap(self.map_file)
-        self.image = QLabel(self)
-        self.image.move(0, 0)
-        self.image.resize(600, 450)
-        self.image.setPixmap(self.pixmap)
-
-    def closeEvent(self, event):
-        """При закрытии формы подчищаем за собой"""
-        os.remove(self.map_file)
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = Example("37.530887", "55.703118", "0.002")
-    ex.show()
-    sys.exit(app.exec())
+pygame.quit()
