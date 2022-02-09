@@ -5,7 +5,6 @@ import requests
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton
 from PyQt5.QtCore import Qt
-from PyQt5 import QtCore
 
 SCREEN_SIZE = [600, 500]
 
@@ -55,12 +54,7 @@ class Example(QWidget):
 
             if response:
                 self.adrs = []
-                # Преобразуем ответ в json-объект
                 json_response = response.json()
-
-                # Получаем первый топоним из ответа геокодера.
-                # Согласно описанию ответа, он находится по следующему пути:
-
                 toponym = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
                 toponym_coodrinates = toponym["Point"]["pos"]
                 if "postal_code" in toponym["metaDataProperty"]["GeocoderMetaData"]["Address"]:
@@ -68,6 +62,7 @@ class Example(QWidget):
                                              toponym["metaDataProperty"]["GeocoderMetaData"]["Address"]["postal_code"]))
                 else:
                     self.address.setText(toponym["metaDataProperty"]["GeocoderMetaData"]["text"])
+
                 for a in json_response["response"]["GeoObjectCollection"]["featureMember"]:
                     if "postal_code" in a["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["Address"]:
                         self.adrs.append([a["GeoObject"]["Point"]["pos"],
@@ -77,12 +72,13 @@ class Example(QWidget):
                     else:
                         self.adrs.append([a["GeoObject"]["Point"]["pos"],
                                           a["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["text"]])
-                    '''self.adrs.append([a["GeoObject"]["Point"]["pos"], a["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["text"]])'''
+
 
                 self.lat, self.lon = toponym_coodrinates.split()[1], toponym_coodrinates.split()[0]
                 self.mark = True
                 self.pixmap = QPixmap(self.getImage())
                 self.image.setPixmap(self.pixmap)
+
             else:
                 print("Ошибка выполнения запроса:")
 
@@ -102,7 +98,7 @@ class Example(QWidget):
                 print("Http статус:", response.status_code, "(", response.reason, ")")
                 sys.exit(1)
 
-            # Запишем полученное изображение в файл.
+
             self.map_file = "map.png"
             with open(self.map_file, "wb") as file:
                 file.write(response.content)
@@ -122,7 +118,6 @@ class Example(QWidget):
             print("Http статус:", response.status_code, "(", response.reason, ")")
             sys.exit(1)
 
-        # Запишем полученное изображение в файл.
         self.map_file = "map.png"
         with open(self.map_file, "wb") as file:
             file.write(response.content)
@@ -132,7 +127,6 @@ class Example(QWidget):
         self.setGeometry(100, 100, *SCREEN_SIZE)
         self.setWindowTitle('Отображение карты')
 
-        ## Изображение
         self.pixmap = QPixmap(self.map_file)
         self.image = QLabel(self)
         self.image.move(0, 0)
@@ -143,35 +137,39 @@ class Example(QWidget):
         if event.key() == Qt.Key_PageUp:
             if self.z <= 18:
                 self.z += 1
-
                 self.pixmap = QPixmap(self.getImage())
                 self.image.setPixmap(self.pixmap)
+
         elif event.key() == Qt.Key_PageDown:
             if self.z >= 1:
                 self.z -= 1
-
                 self.pixmap = QPixmap(self.getImage())
                 self.image.setPixmap(self.pixmap)
+
         elif event.key() == Qt.Key_F1:
             if self.layer == "map":
                 self.layer = "sat"
                 self.pixmap = QPixmap(self.getImage())
                 self.image.setPixmap(self.pixmap)
+
             elif self.layer == "sat":
                 self.layer = ",".join(["sat", "skl"])
                 self.pixmap = QPixmap(self.getImage())
                 self.image.setPixmap(self.pixmap)
+
             else:
                 self.layer = "map"
                 self.pixmap = QPixmap(self.getImage())
                 self.image.setPixmap(self.pixmap)
         elif event.key() == Qt.Key_F2:
+
             if len(self.adrs) > 1:
                 if self.i != len(self.adrs) - 1:
                     self.lat, self.lon = self.adrs[self.i][0].split()[1], self.adrs[self.i][0].split()[0]
                     self.pixmap = QPixmap(self.getImage())
                     self.image.setPixmap(self.pixmap)
                     self.i += 1
+
                 else:
                     self.i = 0
                     self.lat, self.lon = self.adrs[self.i][0].split()[1], self.adrs[self.i][0].split()[0]
@@ -180,9 +178,7 @@ class Example(QWidget):
                     self.i += 1
 
     def closeEvent(self, event):
-        """При закрытии формы подчищаем за собой"""
         os.remove(self.map_file)
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
