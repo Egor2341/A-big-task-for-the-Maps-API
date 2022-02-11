@@ -30,7 +30,9 @@ class Example(QWidget):
         self.address = QLineEdit(self)
         self.address.setGeometry(200, 450, 350, 25)
         self.adrs = []
+
         self.i = 1
+        self.index = True
         self.getImage()
         self.initUI()
 
@@ -57,22 +59,23 @@ class Example(QWidget):
                 json_response = response.json()
                 toponym = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
                 toponym_coodrinates = toponym["Point"]["pos"]
-                if "postal_code" in toponym["metaDataProperty"]["GeocoderMetaData"]["Address"]:
+                if "postal_code" in toponym["metaDataProperty"]["GeocoderMetaData"]["Address"] and self.index:
                     self.address.setText(str(toponym["metaDataProperty"]["GeocoderMetaData"]["text"] + "," + " " +
                                              toponym["metaDataProperty"]["GeocoderMetaData"]["Address"]["postal_code"]))
                 else:
                     self.address.setText(toponym["metaDataProperty"]["GeocoderMetaData"]["text"])
 
                 for a in json_response["response"]["GeoObjectCollection"]["featureMember"]:
+
                     if "postal_code" in a["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["Address"]:
                         self.adrs.append([a["GeoObject"]["Point"]["pos"],
-                                          a["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["text"] + "," + " " +
+                                          a["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["text"],
                                           a["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["Address"][
                                               "postal_code"]])
+
                     else:
                         self.adrs.append([a["GeoObject"]["Point"]["pos"],
                                           a["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["text"]])
-
 
                 self.lat, self.lon = toponym_coodrinates.split()[1], toponym_coodrinates.split()[0]
                 self.mark = True
@@ -97,7 +100,6 @@ class Example(QWidget):
                 print("Ошибка выполнения запроса:")
                 print("Http статус:", response.status_code, "(", response.reason, ")")
                 sys.exit(1)
-
 
             self.map_file = "map.png"
             with open(self.map_file, "wb") as file:
@@ -164,21 +166,40 @@ class Example(QWidget):
         elif event.key() == Qt.Key_F2:
 
             if len(self.adrs) > 1:
+                self.i += 1
                 if self.i != len(self.adrs) - 1:
                     self.lat, self.lon = self.adrs[self.i][0].split()[1], self.adrs[self.i][0].split()[0]
+                    if self.index and len(self.adrs[self.i]) == 3:
+                        self.address.setText(str(self.adrs[self.i][1] + ', ' + self.adrs[self.i][2]))
+                    else:
+                        self.address.setText(self.adrs[self.i][1])
                     self.pixmap = QPixmap(self.getImage())
                     self.image.setPixmap(self.pixmap)
-                    self.i += 1
+
 
                 else:
                     self.i = 0
                     self.lat, self.lon = self.adrs[self.i][0].split()[1], self.adrs[self.i][0].split()[0]
+                    if self.index and len(self.adrs[self.i]) == 3:
+                        self.address.setText(str(self.adrs[self.i][1] + ', ' + self.adrs[self.i][2]))
+                    else:
+                        self.address.setText(self.adrs[self.i][1])
                     self.pixmap = QPixmap(self.getImage())
                     self.image.setPixmap(self.pixmap)
-                    self.i += 1
+
+        elif event.key() == Qt.Key_F3:
+            self.index = not self.index
+            if len(self.address.text()) > 0:
+                if self.index and len(self.adrs[self.i]) == 3:
+                    self.address.setText(str(self.adrs[self.i][1] + ', ' + self.adrs[self.i][2]))
+                else:
+                    self.address.setText(self.adrs[self.i][1])
+                self.pixmap = QPixmap(self.getImage())
+                self.image.setPixmap(self.pixmap)
 
     def closeEvent(self, event):
         os.remove(self.map_file)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
